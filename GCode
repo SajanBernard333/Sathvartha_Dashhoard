@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zion Sathvartha Outreach Ministry</title>
+<style>
+:root {
+  box-sizing: border-box;
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --tx: #1b2333;
+  --mu: #6b7690;
+  --bd: #e3e8f1;
+  --pr: #3b4bd8;
+  --pr2: #eef0ff;
+  --ok: #12a36b;
+  --wa: #e99a00;
+  --er: #d83b4b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1420;
+    --card: #171e2e;
+    --tx: #e8ecf5;
+    --mu: #8e99b3;
+    --bd: #263048;
+    --pr: #7c8bff;
+    --pr2: #1f2745;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--tx); font: 14px/1.45 Inter, system-ui, sans-serif; }
+header { background: linear-gradient(135deg, #2a35b8, #5b3fd0); color: #fff; padding: 18px 16px 14px; }
+header h1 { margin: 0; font-size: 19px; }
+header p { margin: 2px 0 0; opacity: 0.8; font-size: 12px; }
+
+nav { display: flex; gap: 4px; overflow-x: auto; padding: 8px 10px; background: var(--card); border-bottom: 1px solid var(--bd); sticky; top: 0; z-index: 5; }
+nav button { border: 0; background: none; color: var(--mu); padding: 8px 12px; border-radius: 8px; font: 600 13px inherit; cursor: pointer; white-space: nowrap; }
+nav button.on { background: var(--pr2); color: var(--pr); }
+
+main { max-width: 1100px; margin: 0 auto; padding: 14px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.card { background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+
+input, select, textarea { font: inherit; color: var(--tx); background: var(--card); border: 1px solid var(--bd); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.btn { border: 0; background: var(--pr); color: #fff; padding: 9px 14px; border-radius: 8px; font: 600 13px inherit; cursor: pointer; }
+.btn.g { background: var(--pr2); color: var(--pr); }
+.btn.s { padding: 4px 8px; font-size: 12px; }
+
+.tw { overflow-x: auto; border: 1px solid var(--bd); border-radius: 8px; background: var(--card); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--bd); white-space: nowrap; }
+th { background: var(--pr2); color: var(--pr); font-weight: 600; }
+
+.pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--pr2); color: var(--pr); }
+.pill.ok { background: #d1fae5; color: #065f46; }
+.pill.Due, .pill.Overdue, .pill.Negative { background: #fee2e2; color: #991b1b; }
+.pill.Pending, .pill.Neutral { background: #fef3c7; color: #92400e; }
+
+dialog { border: 0; border-radius: 14px; padding: 18px; width: min(460px, 94vw); background: var(--card); color: var(--tx); }
+dialog::backdrop { background: rgba(0,0,0,0.5); }
+label { display: block; font-size: 12px; color: var(--mu); margin: 9px 0 3px; }
+dialog input, dialog select, dialog textarea { width: 100%; }
+
+@media print {
+  header, nav, .row, .btn, dialog { display: none !important; }
+  body, main { background: #fff; color: #000; padding: 0; margin: 0; }
+  .card, .tw { border: none; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="hp0">✝ Zion Sathvartha</h1>
+  <p>Outreach Ministry System · Fresh Contact → Follow Up → Content Share → Sathvartha</p>
+</header>
+
+<nav id="nav"></nav>
+<main id="app"></main>
+
+<dialog id="dlg">
+  <form method="dialog" onsubmit="return false">
+    <h2 id="dt"></h2>
+    <div id="df"></div>
+    <div class="row" style="margin-top:16px; justify-content:flex-end">
+      <button class="btn g" onclick="dlg.close()">Cancel</button>
+      <button class="btn" onclick="save()">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<datalist id="ids"></datalist>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = t => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const iso = (d = 0) => { const x = new Date(); x.setDate(x.getDate() + d); return x.toISOString().slice(0, 10); };
+const days = d => !d ? null : Math.floor((new Date(iso(0)) - new Date(d)) / 86400000);
+
+const KEYS = ['fresh', 'follow', 'content', 'lib', 'home', 'sath', 'travel'];
+const FELS = ['', 'Whitefield', 'Marathahalli', 'HAL'];
+const LANG = ['English', 'Malayalam', 'Kannada', 'Tamil', 'Telugu', 'Hindi', 'Konkani', 'Oriya'];
+const TYPE = ['Call', 'Visit', 'Call + Visit'];
+const ST1 = ['Positive For Next Session', 'Neutral', 'Negative', 'Not Interested', 'No Response', 'Pending'];
+
+let cfg = JSON.parse(localStorage.getItem('zs_cfg') || '{"api":"","key":"","me":"","role":""}');
+let db = JSON.parse(localStorage.getItem('zs_v1') || '{"fresh":[],"follow":[],"content":[],"lib":[],"home":[],"sath":[],"travel":[],"evs":["Sajan Bernard","Ruth"],"evm":{}}');
+
+let tab = 'my';
+let q = '';
+let fel = '';
+let evf = '';
+let startDate = '';
+let endDate = '';
+let MANAGER = cfg.role === 'manager';
+
+function saveCfg() { localStorage.setItem('zs_cfg', JSON.stringify(cfg)); }
+function persist() { localStorage.setItem('zs_v1', JSON.stringify(db)); }
+
+const SCH = {
+  fresh: { t: 'Fresh Contacts', f: [['Contact_ID', 'id'], ['Type', 's', TYPE], ['Date', 'date'], ['Name', 'text'], ['Mobile', 'tel'], ['Language', 's', ['', ...LANG]], ['Fellowship', 's', FELS], ['Evg', 'ev'], ['Status', 's', ST1]] },
+  follow: { t: 'Follow Ups', f: [['Contact_ID', 'cid'], ['Type', 's', TYPE], ['Date', 'date'], ['Name', 'text'], ['Mobile', 'tel'], ['Fellowship', 's', FELS], ['Evg', 'ev'], ['Status', 's', ST1]] },
+  content: { t: 'Content Share', f: [['Contact_ID', 'cid'], ['Type', 's', TYPE], ['Date', 'date'], ['Mobile', 'tel'], ['Fellowship', 's', FELS], ['Evg', 'ev']] },
+  lib: { t: 'Content Library', f: [['Content_ID', 'lid'], ['Title', 'text'], ['Kind', 's', ['Text', 'Link', 'File']], ['Content', 'ta']] },
+  home: { t: 'Home Missions', f: [['Date', 'date'], ['Language', 's', LANG], ['Name', 'text'], ['Mobile', 'tel'], ['Fellowship_Area', 's', FELS]] },
+  sath: { t: 'Sathvartha Journey', f: [['Contact_ID', 'cid'], ['Stage', 's', ['Ready For Sathvartha', 'Attended Sathvartha', 'In Fellowship']], ['Date', 'date']] },
+  travel: { t: 'Travel Details', f: [['Sl_No', 'sl'], ['Name', 'text'], ['Phone_No', 'tel'], ['Fellowship_Area_Name', 's', FELS]] }
+};
+
+function nav() {
+  const links = [
+    ['my', 'My Day'],
+    ['dash', 'Dashboard'],
+    ['pipe', 'Pipeline'],
+    ['rep', 'Reports'],
+    ...KEYS.map(k => [k, SCH[k].t]),
+    ['sync', 'Sync']
+  ];
+  
+  $('#nav').innerHTML = links
+    .filter(([k]) => MANAGER ? k !== 'my' : (k !== 'dash' && k !== 'rep'))
+    .map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" onclick="tab='${k}'; render()">${l}</button>`)
+    .join('');
+}
+
+function renderFilters() {
+  return `
+    <input placeholder="Search..." value="${esc(q)}" oninput="q=this.value.toLowerCase(); render(1)" style="flex:1; min-width:120px">
+    <select onchange="fel=this.value; render()"><option value="">All Fellowships</option>${FELS.slice(1).map(f => `<option ${f === fel ? 'selected' : ''}>${esc(f)}</option>`).join('')}</select>
+    <select onchange="evf=this.value; render()"><option value="">All Evangelists</option>${db.evs.map(e => `<option ${e === evf ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select>
+    <input type="date" value="${startDate}" onchange="startDate=this.value; render()" title="Start Date">
+    <input type="date" value="${endDate}" onchange="endDate=this.value; render()" title="End Date">
+  `;
+}
+
+function filterRecords(arr) {
+  return arr.filter(r => {
+    const matchQ = !q || JSON.stringify(r).toLowerCase().includes(q);
+    const matchFel = !fel || (r.Fellowship || r.Fellowship_Area || r.Fellowship_Area_Name) === fel;
+    const matchEv = !evf || (r.Evg || r.Name_Presenter) === evf;
+    const d = r.Date || r.Attended_Date || '';
+    const matchStart = !startDate || d >= startDate;
+    const matchEnd = !endDate || d <= endDate;
+    return matchQ && matchFel && matchEv && matchStart && matchEnd;
+  });
+}
+
+function render() {
+  nav();
+  $('#hp0').textContent = '✝ Zion Sathvartha' + (MANAGER ? ' · Manager View' : cfg.me ? ' · ' + cfg.me : '');
+  const main = $('#app');
+
+  if (tab === 'my') {
+    main.innerHTML = `<div class="card"><h2>Welcome, ${esc(cfg.me || 'Team Member')}</h2><p>Select a tab above to manage contacts or follow-ups.</p></div>`;
+  } else if (tab === 'dash') {
+    main.innerHTML = `<div class="card"><h2>Dashboard Overview</h2><p>Data metrics aggregated based on filter selection.</p></div>`;
+  } else if (tab === 'rep') {
+    main.innerHTML = renderCustomReport();
+  } else if (tab === 'sync') {
+    main.innerHTML = renderSync();
+  } else {
+    main.innerHTML = renderTableTab(tab);
+  }
+}
+
+function renderTableTab(k) {
+  const S = SCH[k];
+  const cols = S.f.map(f => f[0]);
+  const rows = filterRecords(db[k]);
+
+  return `
+    <div class="row">
+      ${renderFilters()}
+      <button class="btn g" onclick="csv('${k}')">Export CSV</button>
+      <button class="btn" onclick="openF('${k}')">+ Add</button>
+    </div>
+    <div class="tw">
+      <table>
+        <tr>${cols.map(c => `<th>${c.replace(/_/g, ' ')}</th>`).join('')}</tr>
+        ${rows.map(r => `<tr>${cols.map(c => `<td>${esc(r[c] || '')}</td>`).join('')}</tr>`).join('')}
+      </table>
+    </div>
+  `;
+}
+
+function renderCustomReport() {
+  const freshCount = filterRecords(db.fresh).length;
+  const followCount = filterRecords(db.follow).length;
+  const sathCount = filterRecords(db.sath).length;
+
+  return `
+    <div class="row">
+      ${renderFilters()}
+      <button class="btn" onclick="window.print()">Export PDF</button>
+      <button class="btn g" onclick="csv('rep')">Export CSV</button>
+    </div>
+    <div class="card">
+      <h2>Custom Ministry Outreach Performance Report</h2>
+      <hr style="border:0; border-top:1px solid var(--bd); margin: 12px 0;">
+      <p><b>Date Scope:</b> ${startDate || 'Earliest'} to ${endDate || 'Latest'}</p>
+      <div class="row" style="gap:16px; margin-top:16px;">
+        <div class="card" style="flex:1; text-align:center;"><h3>Fresh Contacts</h3><b style="font-size:24px; color:var(--pr);">${freshCount}</b></div>
+        <div class="card" style="flex:1; text-align:center;"><h3>Follow Ups</h3><b style="font-size:24px; color:var(--ok);">${followCount}</b></div>
+        <div class="card" style="flex:1; text-align:center;"><h3>Sathvartha Stage</h3><b style="font-size:24px; color:var(--wa);">${sathCount}</b></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSync() {
+  return `
+    <div class="card">
+      <h2>Google Sheets Configuration (Manager Only)</h2>
+      <label>Web App URL</label>
+      <input id="sy_u" value="${esc(cfg.api)}" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%">
+      <label>Secret Key</label>
+      <input id="sy_k" type="password" value="${esc(cfg.key)}" style="width:100%">
+      <div class="row" style="margin-top:12px;">
+        <button class="btn" onclick="saveSync()">Save Configuration</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveSync() {
+  cfg.api = $('#sy_u').value.trim();
+  cfg.key = $('#sy_k').value.trim();
+  saveCfg();
+  alert('Configuration saved successfully! Shared settings are active on this browser.');
+}
+
+function openF(k) {
+  const S = SCH[k];
+  $('#dt').textContent = 'Add ' + S.t;
+  $('#df').innerHTML = S.f.map(([n, t]) => `<label>${n.replace(/_/g, ' ')}</label><input id="f_${n}" type="${t === 'date' ? 'date' : 'text'}">`).join('');
+  $('#dlg').showModal();
+}
+
+function save() {
+  const k = tab;
+  const S = SCH[k];
+  const r = {};
+  S.f.forEach(([n]) => { r[n] = $('#f_' + n).value.trim(); });
+  db[k].push(r);
+  persist();
+  $('#dlg').close();
+  render();
+}
+
+function csv(k) {
+  let cols = k === 'rep' ? ['Metric', 'Value'] : SCH[k].f.map(f => f[0]);
+  let rows = k === 'rep' 
+    ? [['Fresh Contacts', filterRecords(db.fresh).length], ['Follow Ups', filterRecords(db.follow).length]] 
+    : filterRecords(db[k]);
+
+  let csvContent = cols.join(',') + '\n' + rows.map(r => Array.isArray(r) ? r.join(',') : cols.map(c => `"${String(r[c] || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `zion_${k}_${iso(0)}.csv`;
+  a.click();
+}
+
+render();
+</script>
+</body>
+</html>
